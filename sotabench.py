@@ -1,7 +1,8 @@
-from sotabencheval.utils import is_server
+from sotabencheval.utils import is_server, set_env_on_server, SOTABENCH_CACHE
 from sotabencheval.question_answering import SQuADSubmission, SQuADVersion
 import torch
 
+set_env_on_server("PYTORCH_PRETRAINED_BERT_CACHE", SOTABENCH_CACHE / "pytorch_pretrained_bert")
 import sys
 sys.path = ["code"] + sys.path
 from code import run_squad
