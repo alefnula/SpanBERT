@@ -1,5 +1,5 @@
 from sotabencheval.utils import is_server, set_env_on_server, SOTABENCH_CACHE
-from sotabencheval.question_answering import SQuADSubmission, SQuADVersion
+from sotabencheval.question_answering import SQuADEvaluator, SQuADVersion
 import torch
 
 set_env_on_server("PYTORCH_PRETRAINED_BERT_CACHE", SOTABENCH_CACHE / "pytorch_pretrained_bert")
@@ -54,7 +54,7 @@ def evaluate(model, tokenizer, device, eval_examples, settings, na_prob_thresh=1
 
 
 def run_benchmark(model_url: str, model_name: str, version: SQuADVersion):
-    submission = SQuADSubmission(
+    evaluator = SQuADEvaluator(
         local_root="data/nlp/squad",
         model_name=model_name,
         paper_arxiv_id="1907.10529",
@@ -62,14 +62,14 @@ def run_benchmark(model_url: str, model_name: str, version: SQuADVersion):
     )
 
     model = run_squad.BertForQuestionAnswering.from_pretrained(model_url)
-    settings = get_default_settings(submission.version)
+    settings = get_default_settings(evaluator.version)
     tokenizer = run_squad.BertTokenizer.from_pretrained("spanbert-large-cased", do_lower_case=False)
 
     device = torch.device("cuda")
     model.to(device)
 
     eval_examples = run_squad.read_squad_examples(
-        input_file=submission.dataset_path, is_training=False,
+        input_file=evaluator.dataset_path, is_training=False,
         version_2_with_negative=settings.version_2_with_negative)
 
     # when on sotabench server, run the pipeline on a small dataset first and
@@ -78,18 +78,18 @@ def run_benchmark(model_url: str, model_name: str, version: SQuADVersion):
     if is_server():
         small_examples = eval_examples[::100]
         answers = evaluate(model, tokenizer, device, small_examples, settings)
-        submission.add(answers)
-        if submission.cache_exists:
+        evaluator.add(answers)
+        if evaluator.cache_exists:
             cache_exists = True
         else:
-            submission.reset()
+            evaluator.reset()
 
     if not cache_exists or not is_server():
         answers = evaluate(model, tokenizer, device, eval_examples, settings)
-        submission.add(answers)
+        evaluator.add(answers)
 
-    submission.save()
-    print(submission.results)
+    evaluator.save()
+    print(evaluator.results)
 
 
 run_benchmark("http://dl.fbaipublicfiles.com/fairseq/models/spanbert_squad1.tar.gz", "SpanBERT", SQuADVersion.V11)
