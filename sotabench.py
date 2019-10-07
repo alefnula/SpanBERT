@@ -84,6 +84,7 @@ def run_benchmark(model_url: str, model_name: str, version: SQuADVersion):
         else:
             evaluator.reset()
 
+    evaluator.reset_time()
     if not cache_exists or not is_server():
         answers = evaluate(model, tokenizer, device, eval_examples, settings)
         evaluator.add(answers)
