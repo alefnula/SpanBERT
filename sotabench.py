@@ -1,6 +1,9 @@
 from sotabencheval.utils import is_server, set_env_on_server, SOTABENCH_CACHE
 from sotabencheval.question_answering import SQuADEvaluator, SQuADVersion
 import torch
+from torch.hub import download_url_to_file
+from pathlib import Path
+
 
 set_env_on_server("PYTORCH_PRETRAINED_BERT_CACHE", SOTABENCH_CACHE / "pytorch_pretrained_bert")
 import sys
@@ -92,6 +95,26 @@ def run_benchmark(model_url: str, model_name: str, version: SQuADVersion):
     evaluator.save()
     print(evaluator.results)
 
+
+def get_datasets(versions):
+    squad_links = {
+        SQuADVersion.V11:"https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v1.1.json",
+        SQuADVersion.V20: "https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json"
+    }
+    filenames = {
+        SQuADVersion.V11: "dev-v1.1.json",
+        SQuADVersion.V20: "dev-v2.0.json"
+    }
+    data_dir = Path.home() / ".data" if is_server() else Path("data")
+    datasets_path = data_dir / "nlp" / "squad"
+    datasets_path.mkdir(parents=True, exist_ok=True)
+    for version in versions:
+        filename = datasets_path / filenames[version]
+        if not filename.exists():
+            download_url_to_file(squad_links[version], filename)
+
+
+get_datasets([SQuADVersion.V11, SQuADVersion.V20])
 
 run_benchmark("http://dl.fbaipublicfiles.com/fairseq/models/spanbert_squad1.tar.gz", "SpanBERT", SQuADVersion.V11)
 run_benchmark("http://dl.fbaipublicfiles.com/fairseq/models/spanbert_squad2.tar.gz", "SpanBERT", SQuADVersion.V20)
