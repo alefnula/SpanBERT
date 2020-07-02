@@ -105,7 +105,7 @@ def get_datasets(versions):
         SQuADVersion.V11: "dev-v1.1.json",
         SQuADVersion.V20: "dev-v2.0.json"
     }
-    data_dir = Path.home() / ".data" if is_server() else Path("data")
+    data_dir = Path(".data") if is_server() else Path("data")
     datasets_path = data_dir / "nlp" / "squad"
     datasets_path.mkdir(parents=True, exist_ok=True)
     for version in versions:
